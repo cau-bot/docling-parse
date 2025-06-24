@@ -1829,20 +1829,38 @@ namespace pdflib
 		      }
                     else
                       {
-                        // Try to decode names of the form '/C123' into
-                        // their ASCII representation. If the conversion
-                        // fails or falls outside of the ASCII table, keep
-                        // the original glyph name.
+                        // Try to decode names of the form '/C123'. For
+                        // codes in the ASCII range we simply convert the
+                        // value. For higher values, we attempt to decode
+                        // using the font's base encoding and finally fall
+                        // back to ISO-8859-1.
+
                         std::smatch ascii_match;
                         std::regex  re_ascii(R"(^\/C(\d+)$)");
 
                         if(std::regex_match(name, ascii_match, re_ascii))
                           {
                             int code = std::stoi(ascii_match[1].str());
+
                             if(code >= 0 && code < 128)
                               {
                                 diff_numb_to_char[numb] =
                                   std::string(1, static_cast<char>(code));
+                              }
+                            else if(code >= 0 && code < 256)
+                              {
+                                std::string decoded =
+                                  get_character_from_encoding(code);
+
+                                if(decoded.rfind("GLYPH<", 0) == 0)
+                                  {
+                                    std::string tmp(4, ' ');
+                                    auto itr = utf8::append(code, tmp.begin());
+                                    tmp.erase(itr, tmp.end());
+                                    decoded = tmp;
+                                  }
+
+                                diff_numb_to_char[numb] = decoded;
                               }
                             else
                               {
