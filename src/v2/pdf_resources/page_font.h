@@ -54,6 +54,7 @@ namespace pdflib
 
     std::string get_correct_character(uint32_t c);
     std::string get_character_from_encoding(uint32_t c);
+    std::string decode_cname(const std::string& name);
 
     void init_encoding();
     void init_subtype();
@@ -569,9 +570,42 @@ namespace pdflib
                          << "; Encoding: "  << to_string(encoding)
                          << "; font-name: " << font_name;
 	    
-            return notdef;
+        return notdef;
+      }
+  }
+
+  // Decode glyph names of the form '/Cnnn'.
+  // - For 0<=nnn<128 we interpret it as standard ASCII.
+  // - For 128<=nnn<256 we use the font's encoding and
+  //   fall back to ISO-8859-1 if undefined.
+  // - Otherwise return the name unchanged.
+  std::string pdf_resource<PAGE_FONT>::decode_cname(const std::string& name)
+  {
+    static const std::regex re_ascii(R"(^\/C(\d+)$)");
+
+    std::smatch m;
+    if(std::regex_match(name, m, re_ascii))
+      {
+        int code = std::stoi(m[1].str());
+        if(code >= 0 && code < 128)
+          {
+            return std::string(1, static_cast<char>(code));
+          }
+        else if(code >= 0 && code < 256)
+          {
+            std::string decoded = get_character_from_encoding(code);
+            if(decoded.rfind("GLYPH<", 0) == 0)
+              {
+                std::string tmp;
+                utf8::append(code, std::back_inserter(tmp));
+                return tmp;
+              }
+            return decoded;
           }
       }
+
+    return name;
+  }
   }
 
   void pdf_resource<PAGE_FONT>::set(std::string      font_key_,
@@ -1694,32 +1728,6 @@ namespace pdflib
     std::regex re_01(R"(\/(.+)\.(.+))");
     std::regex re_02(R"((\/)?(uni|UNI)([0-9A-Ea-e]{4}))");
     std::regex re_03(R"((\/)(g|G)\d+)");
-    std::regex re_ascii(R"(^\/C(\d+)$)");
-
-    auto decode_cname = [&](const std::string& n) -> std::string
-      {
-        std::smatch m;
-        if(std::regex_match(n, m, re_ascii))
-          {
-            int code = std::stoi(m[1].str());
-            if(code >= 0 && code < 128)
-              {
-                return std::string(1, static_cast<char>(code));
-              }
-            else if(code >= 0 && code < 256)
-              {
-                std::string decoded = get_character_from_encoding(code);
-                if(decoded.rfind("GLYPH<", 0) == 0)
-                  {
-                    std::string tmp;
-                    utf8::append(code, std::back_inserter(tmp));
-                    return tmp;
-                  }
-                return decoded;
-              }
-          }
-        return n;
-      };
     
     if(utils::json::has(keys, json_font))
       {
