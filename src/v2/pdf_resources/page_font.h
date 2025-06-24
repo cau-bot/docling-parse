@@ -572,6 +572,7 @@ namespace pdflib
 	    
         return notdef;
       }
+    }
   }
 
   // Decode glyph names of the form '/Cnnn'.
@@ -605,7 +606,6 @@ namespace pdflib
       }
 
     return name;
-  }
   }
 
   void pdf_resource<PAGE_FONT>::set(std::string      font_key_,
