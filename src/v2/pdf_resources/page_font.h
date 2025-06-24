@@ -1694,6 +1694,32 @@ namespace pdflib
     std::regex re_01(R"(\/(.+)\.(.+))");
     std::regex re_02(R"((\/)?(uni|UNI)([0-9A-Ea-e]{4}))");
     std::regex re_03(R"((\/)(g|G)\d+)");
+    std::regex re_ascii(R"(^\/C(\d+)$)");
+
+    auto decode_cname = [&](const std::string& n) -> std::string
+      {
+        std::smatch m;
+        if(std::regex_match(n, m, re_ascii))
+          {
+            int code = std::stoi(m[1].str());
+            if(code >= 0 && code < 128)
+              {
+                return std::string(1, static_cast<char>(code));
+              }
+            else if(code >= 0 && code < 256)
+              {
+                std::string decoded = get_character_from_encoding(code);
+                if(decoded.rfind("GLYPH<", 0) == 0)
+                  {
+                    std::string tmp;
+                    utf8::append(code, std::back_inserter(tmp));
+                    return tmp;
+                  }
+                return decoded;
+              }
+          }
+        return n;
+      };
     
     if(utils::json::has(keys, json_font))
       {
@@ -1829,49 +1855,7 @@ namespace pdflib
 		      }
                     else
                       {
-                        // Try to decode names of the form '/C123'. For
-                        // codes in the ASCII range we simply convert the
-                        // value. For higher values, we attempt to decode
-                        // using the font's base encoding and finally fall
-                        // back to ISO-8859-1.
-
-                        std::smatch ascii_match;
-                        std::regex  re_ascii(R"(^\/C(\d+)$)");
-
-                        if(std::regex_match(name, ascii_match, re_ascii))
-                          {
-                            int code = std::stoi(ascii_match[1].str());
-
-                            if(code >= 0 && code < 128)
-                              {
-                                diff_numb_to_char[numb] =
-                                  std::string(1, static_cast<char>(code));
-                              }
-                            else if(code >= 0 && code < 256)
-                              {
-                                std::string decoded =
-                                  get_character_from_encoding(code);
-
-                                if(decoded.rfind("GLYPH<", 0) == 0)
-                                  {
-                                    std::string tmp(4, ' ');
-                                    auto itr = utf8::append(code, tmp.begin());
-                                    tmp.erase(itr, tmp.end());
-                                    decoded = tmp;
-                                  }
-
-                                diff_numb_to_char[numb] = decoded;
-                              }
-                            else
-                              {
-                                diff_numb_to_char[numb] = name;
-                              }
-                          }
-                        else
-                          {
-                            diff_numb_to_char[numb] = name;
-                          }
-
+                        diff_numb_to_char[numb] = decode_cname(name);
                         LOG_S(WARNING) << "differences["<<numb<<"] -> " << name;
                       }
 
