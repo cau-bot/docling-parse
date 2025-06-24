@@ -1829,7 +1829,31 @@ namespace pdflib
 		      }
                     else
                       {
-                        diff_numb_to_char[numb] = name;
+                        // Try to decode names of the form '/C123' into
+                        // their ASCII representation. If the conversion
+                        // fails or falls outside of the ASCII table, keep
+                        // the original glyph name.
+                        std::smatch ascii_match;
+                        std::regex  re_ascii(R"(^\/C(\d+)$)");
+
+                        if(std::regex_match(name, ascii_match, re_ascii))
+                          {
+                            int code = std::stoi(ascii_match[1].str());
+                            if(code >= 0 && code < 128)
+                              {
+                                diff_numb_to_char[numb] =
+                                  std::string(1, static_cast<char>(code));
+                              }
+                            else
+                              {
+                                diff_numb_to_char[numb] = name;
+                              }
+                          }
+                        else
+                          {
+                            diff_numb_to_char[numb] = name;
+                          }
+
                         LOG_S(WARNING) << "differences["<<numb<<"] -> " << name;
                       }
 
