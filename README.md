@@ -2,7 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/docling-parse)](https://pypi.org/project/docling-parse/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/docling-parse)](https://pypi.org/project/docling-parse/)
-[![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Pybind11](https://img.shields.io/badge/build-pybind11-blue)](https://github.com/pybind/pybind11/)
 [![Platforms](https://img.shields.io/badge/platform-macos%20|%20linux%20|%20windows-blue)](https://github.com/docling-project/docling-parse/)
 [![License MIT](https://img.shields.io/github/license/docling-project/docling-parse)](https://opensource.org/licenses/MIT)
@@ -12,7 +12,7 @@ Simple package to extract text, paths and bitmap images with coordinates from pr
 To do the visualizations yourself, simply run (change `word` into `char` or `line`),
 
 ```sh
-poetry run python ./docling_parse/visualize.py -i <path-to-pdf-file> -c word --interactive
+uv run python ./docling_parse/visualize.py -i <path-to-pdf-file> -c word --interactive
 ```
 
 <table>
@@ -99,7 +99,6 @@ options:
   -p PDF, --pdf PDF  Path to the PDF file
 ```
 
-
 ## Performance Benchmarks
 
 ### Characteristics of different parser versions
@@ -183,23 +182,28 @@ If you dont have an input file, then a template input file will be printed on th
 
 ### Python
 
-To build the package, simply run (make sure [poetry](https://python-poetry.org/) is [installed](https://python-poetry.org/docs/#installing-with-the-official-installer)),
+To build the package, simply run (make sure [uv](https://docs.astral.sh/uv/) is [installed](https://docs.astral.sh/uv/getting-started/installation)),
 
+```sh
+uv sync
 ```
-poetry install
+
+The latter will only work after a clean `git clone`. If you are developing and updating C++ code, please use,
+
+```sh
+# uv pip install --force-reinstall --no-deps -e .
+rm -rf .venv; uv venv; uv pip install --force-reinstall --no-deps -e ".[perf-tools]"
 ```
 
 To test the package, run:
 
+```sh
+uv run pytest ./tests -v -s
 ```
-poetry run pytest ./tests -v -s
-```
-
 
 ## Contributing
 
 Please read [Contributing to Docling Parse](https://github.com/docling-project/docling-parse/blob/main/CONTRIBUTING.md) for details.
-
 
 ## References
 

@@ -1,3 +1,61 @@
+## [v4.5.1](https://github.com/docling-project/docling-parse/releases/tag/v4.5.1) - 2025-10-16
+
+### Fix
+
+* Support pdf with only trim-bbox ([#173](https://github.com/docling-project/docling-parse/issues/173)) ([`76ab6b5`](https://github.com/docling-project/docling-parse/commit/76ab6b5d363f6c757b5270287a6585fe4f8394a0))
+
+## [v4.5.0](https://github.com/docling-project/docling-parse/releases/tag/v4.5.0) - 2025-09-17
+
+### Feature
+
+* Add perf tools ([#165](https://github.com/docling-project/docling-parse/issues/165)) ([`f8d53ee`](https://github.com/docling-project/docling-parse/commit/f8d53ee481689abd5f3abf843b4aba7944e74a83))
+
+## [v4.4.0](https://github.com/docling-project/docling-parse/releases/tag/v4.4.0) - 2025-09-04
+
+### Feature
+
+* Reset to the old parameters in sanitation ([#163](https://github.com/docling-project/docling-parse/issues/163)) ([`0402b3f`](https://github.com/docling-project/docling-parse/commit/0402b3f0a3e05fbb298261f49494c530997b6ec4))
+
+## [v4.3.0](https://github.com/docling-project/docling-parse/releases/tag/v4.3.0) - 2025-09-03
+
+### Feature
+
+* Accelerate docling parse ([#161](https://github.com/docling-project/docling-parse/issues/161)) ([`1466548`](https://github.com/docling-project/docling-parse/commit/14665484763613586a4c18a38c84afbbaad9521c))
+
+## [v4.2.3](https://github.com/docling-project/docling-parse/releases/tag/v4.2.3) - 2025-08-22
+
+### Fix
+
+* Media box ([#157](https://github.com/docling-project/docling-parse/issues/157)) ([`5ded3b8`](https://github.com/docling-project/docling-parse/commit/5ded3b8f7f12936ab390f8296814e2cdddc2da43))
+
+## [v4.2.2](https://github.com/docling-project/docling-parse/releases/tag/v4.2.2) - 2025-08-19
+
+### Fix
+
+* Filter out *-linux_x86_64.whl ([#153](https://github.com/docling-project/docling-parse/issues/153)) ([`a000923`](https://github.com/docling-project/docling-parse/commit/a0009237b8c809c13e93d67a9e91ac6b4490f65b))
+
+## [v4.2.1](https://github.com/docling-project/docling-parse/releases/tag/v4.2.1) - 2025-08-19
+
+### Fix
+
+* Wheels.yml ([#152](https://github.com/docling-project/docling-parse/issues/152)) ([`499813b`](https://github.com/docling-project/docling-parse/commit/499813bcefc4b9a0f0cb90d7856a6d84ad9b62eb))
+
+## [v4.2.0](https://github.com/docling-project/docling-parse/releases/tag/v4.2.0) - 2025-08-19
+
+### Feature
+
+* Add page unloading ([#150](https://github.com/docling-project/docling-parse/issues/150)) ([`fe3482f`](https://github.com/docling-project/docling-parse/commit/fe3482f7d7a08fd1940840a64776dd14d0fb7eef))
+
+## [v4.1.0](https://github.com/docling-project/docling-parse/releases/tag/v4.1.0) - 2025-06-24
+
+### Feature
+
+* Fixed char ordering in text lines ([#138](https://github.com/docling-project/docling-parse/issues/138)) ([`8872e73`](https://github.com/docling-project/docling-parse/commit/8872e736bf97ecede88a3999a9530b87956586fb))
+
+### Fix
+
+* Glyph issue with encodings ([#129](https://github.com/docling-project/docling-parse/issues/129)) ([`6397287`](https://github.com/docling-project/docling-parse/commit/63972876e81531634dcab913bead26ddced6135b))
+
 ## [v4.0.5](https://github.com/docling-project/docling-parse/releases/tag/v4.0.5) - 2025-06-13
 
 ### Fix

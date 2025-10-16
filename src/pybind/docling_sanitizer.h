@@ -20,16 +20,14 @@ namespace docling
 
     bool set_char_cells(nlohmann::json& data);
 
-    nlohmann::json to_records(std::string label);
+    nlohmann::json create_word_cells(double horizontal_cell_tolerance, //=1.00,
+				     bool enforce_same_font, //=true,
+				     double space_width_factor_for_merge); //=0.05);
 
-    nlohmann::json create_word_cells(double horizontal_cell_tolerance=1.00,
-				     bool enforce_same_font=true,
-				     double space_width_factor_for_merge=0.05);
-
-    nlohmann::json create_line_cells(double horizontal_cell_tolerance=1.00,
-				     bool enforce_same_font=true,
-				     double space_width_factor_for_merge=1.00,
-				     double space_width_factor_for_merge_with_space=0.33);
+    nlohmann::json create_line_cells(double horizontal_cell_tolerance, //=1.00,
+				     bool enforce_same_font, //=true,
+				     double space_width_factor_for_merge, //=1.00,
+				     double space_width_factor_for_merge_with_space); //=0.33);
     
   private:
 
@@ -173,6 +171,7 @@ namespace docling
     return false;
   }
 
+  /*
   nlohmann::json docling_sanitizer::to_records(std::string label)
   {
     LOG_S(INFO) << __FUNCTION__;
@@ -239,6 +238,7 @@ namespace docling
     
     return result;
   }
+  */
   
   nlohmann::json docling_sanitizer::create_word_cells(double horizontal_cell_tolerance,
 						      bool enforce_same_font,
@@ -246,6 +246,7 @@ namespace docling
   {
     LOG_S(INFO) << __FUNCTION__;
 
+    /*
     // do a deep copy
     word_cells = char_cells;
 
@@ -271,7 +272,7 @@ namespace docling
     double space_width_factor_for_merge_with_space = 2.0*space_width_factor_for_merge; 
     
     cell_sanitizer.sanitize_bbox(word_cells,
-				 horizontal_cell_tolerance,
+    horizontal_cell_tolerance,
 				 enforce_same_font,
 				 space_width_factor_for_merge,
 				 space_width_factor_for_merge_with_space);
@@ -279,6 +280,14 @@ namespace docling
     LOG_S(INFO) << "#-wordcells: " << word_cells.size();
 
     return to_records("word");
+    */
+
+    word_cells = cell_sanitizer.create_word_cells(char_cells,
+						  horizontal_cell_tolerance,
+						  enforce_same_font,
+						  space_width_factor_for_merge);
+
+    return cell_sanitizer.to_records(word_cells);
   }
 
   nlohmann::json docling_sanitizer::create_line_cells(double horizontal_cell_tolerance,
@@ -288,6 +297,7 @@ namespace docling
   {
     LOG_S(INFO) << __FUNCTION__ << " -> char_cells: " << char_cells.size();
 
+    /*
     // do a deep copy
     line_cells = char_cells;
 
@@ -302,9 +312,16 @@ namespace docling
     LOG_S(INFO) << "initial line-cells: " << line_cells.size();
 
     return to_records("line");
-  }  
+    */
 
-  
+    line_cells = cell_sanitizer.create_line_cells(char_cells,
+						  horizontal_cell_tolerance,
+						  enforce_same_font,
+						  space_width_factor_for_merge,
+						  space_width_factor_for_merge_with_space);
+
+    return cell_sanitizer.to_records(line_cells);
+  }  
   
 }
 
