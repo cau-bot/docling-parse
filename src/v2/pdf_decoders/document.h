@@ -29,11 +29,22 @@ namespace pdflib
     
     bool process_document_from_file(std::string& _filename);
     bool process_document_from_bytesio(std::string& _buffer);
-
+    
     void decode_document(std::string page_boundary, bool do_sanitization);
 
-    void decode_document(std::vector<int>& page_numbers, std::string page_boundary, bool do_sanitization);
+    void decode_document(std::vector<int>& page_numbers,
+			 std::string page_boundary,
+			 bool do_sanitization,
+			 bool keep_char_cells,
+			 bool keep_lines,
+			 bool keep_bitmaps,
+			 bool create_word_cells,
+			 bool create_line_cells);
 
+    bool unload_pages();
+
+    bool unload_page(int page_number);
+    
   private:
 
     void update_qpdf_logger();
@@ -221,6 +232,10 @@ namespace pdflib
   {
     LOG_S(INFO) << "start decoding all pages ...";        
     utils::timer timer;
+
+    bool keep_char_cells = true;
+    bool keep_lines = true; 
+    bool keep_bitmaps = true;
     
     nlohmann::json& json_pages = json_document["pages"];
     json_pages = nlohmann::json::array({});
@@ -232,13 +247,13 @@ namespace pdflib
       {
 	utils::timer page_timer;
 	
-        pdf_decoder<PAGE> page_decoder(page);
+        pdf_decoder<PAGE> page_decoder(page, page_number);
 
         auto timings_ = page_decoder.decode_page(page_boundary, do_sanitization);
 	update_timings(timings_, set_timer);
 	set_timer = false;
 
-        json_pages.push_back(page_decoder.get());
+        json_pages.push_back(page_decoder.get(keep_char_cells, keep_lines, keep_bitmaps, do_sanitization));
 
 	std::stringstream ss;
 	ss << "decoding page " << page_number++;
@@ -251,9 +266,20 @@ namespace pdflib
 
   void pdf_decoder<DOCUMENT>::decode_document(std::vector<int>& page_numbers,
 					      std::string page_boundary,
-					      bool do_sanitization)
+					      bool do_sanitization,
+					      bool keep_char_cells,
+					      bool keep_lines,
+					      bool keep_bitmaps,
+					      bool create_word_cells,
+					      bool create_line_cells)
   {
-    LOG_S(INFO) << "start decoding selected pages ...";        
+    LOG_S(INFO) << "start decoding selected pages ("
+		<< "keep_char_cells: " << keep_char_cells << ", "
+		<< "keep_lines: " << keep_lines << ", "
+		<< "keep_bitmaps: " << keep_bitmaps << ", "
+		<< "create_word_cells: " << create_word_cells << ", "
+      		<< "create_line_cells: " << create_line_cells << ")";  
+						   
     utils::timer timer;
 
     // make sure that we only return the page from the page-numbers
@@ -271,14 +297,64 @@ namespace pdflib
 	  {
 	    utils::timer page_timer;
 	    
-	    pdf_decoder<PAGE> page_decoder(pages.at(page_number));
+	    pdf_decoder<PAGE> page_decoder(pages.at(page_number), page_number);
+
+	    {
+	      //utils::timer decode_timer;	      
+	      auto timings_ = page_decoder.decode_page(page_boundary, do_sanitization);
+
+	      //std::cout << "decode_timer: " << decode_timer.get_time() << "\n";
+	      
+	      update_timings(timings_, set_timer);
+	      set_timer=false;
+	    }
+
+	    nlohmann::json page = page_decoder.get(keep_char_cells, keep_lines, keep_bitmaps, do_sanitization);
+
+	    pdf_sanitator<PAGE_CELLS> sanitizer;
+	    if(create_word_cells)
+	      {
+		LOG_S(INFO) << "creating word-cells in `original` (2)";        
+
+		double horizontal_cell_tolerance=1.00;
+		bool enforce_same_font=true;
+		double space_width_factor_for_merge=0.33;
+		
+		pdf_resource<PAGE_CELLS> word_cells = sanitizer.create_word_cells(page_decoder.get_page_cells(),
+										  horizontal_cell_tolerance,
+										  enforce_same_font,
+										  space_width_factor_for_merge);
+
+		// quadratic: might be slower ...
+		sanitizer.remove_duplicate_cells(word_cells, 0.5, true);
+		
+		page["original"]["word_cells"] = word_cells.get();
+	      }
+
+	    if(create_line_cells)
+	      {
+		//utils::timer line_cells_timer;
+		
+		LOG_S(INFO) << "creating line-cells in `original` (2)";        
+
+		double horizontal_cell_tolerance=1.00;
+		bool enforce_same_font=true;
+		double space_width_factor_for_merge=1.00;
+		double space_width_factor_for_merge_with_space=0.33;
+		
+		pdf_resource<PAGE_CELLS> line_cells = sanitizer.create_line_cells(page_decoder.get_page_cells(),
+										  horizontal_cell_tolerance,
+										  enforce_same_font,
+										  space_width_factor_for_merge,
+										  space_width_factor_for_merge_with_space);
+		// quadratic: might be slower ...
+		sanitizer.remove_duplicate_cells(line_cells, 0.5, true);
+		
+		page["original"]["line_cells"] = line_cells.get();
+		//std::cout << "line_cells: " << line_cells_timer.get_time() << "\n";
+	      }	    
 	    
-	    auto timings_ = page_decoder.decode_page(page_boundary, do_sanitization);
-	    
-	    update_timings(timings_, set_timer);
-	    set_timer=false;
-	    
-	    json_pages.push_back(page_decoder.get());
+	    json_pages.push_back(page);
 
 	    std::stringstream ss;
 	    ss << "decoding page " << page_number;
@@ -313,6 +389,45 @@ namespace pdflib
       }    
   }
 
+  bool pdf_decoder<DOCUMENT>::unload_page(int page_number)
+  {
+    if(not json_document.contains("pages"))
+      {
+	LOG_S(WARNING) << "json_document does not have `pages`";        
+	return false;
+      }
+
+    nlohmann::json& json_pages = json_document["pages"];
+    
+    for(int l=0; l<json_pages.size(); l++)
+      {
+	if((json_pages[l].is_object()) and
+	   (json_pages[l].contains("page_number")) and 
+	   (json_pages[l]["page_number"]==page_number))
+	  {
+	    json_pages[l].clear();
+
+	    nlohmann::json none;
+	    json_pages[l] = none;
+	  }
+      }
+
+    return true;
+  }
+
+  bool pdf_decoder<DOCUMENT>::unload_pages()
+  {
+    if(not json_document.contains("pages"))
+      {
+	LOG_S(WARNING) << "json_document does not have `pages`";        
+	return false;
+      }
+
+    json_document["pages"] = nlohmann::json::array({});
+
+    return true;
+  }
+    
 }
 
 #endif

@@ -31,6 +31,10 @@ namespace pdflib
     
   private:
 
+    std::array<double, 4> normalize_page_boundaries(std::array<double, 4> bbox, std::string name);
+    
+  private:
+
     bool                  initialised;
 
     std::string page_boundary;
@@ -154,6 +158,33 @@ namespace pdflib
     
     return delta;
   }
+
+  std::array<double, 4> pdf_resource<PAGE_DIMENSION>::normalize_page_boundaries(std::array<double, 4> bbox, std::string name)
+  {
+    LOG_S(INFO) << __FUNCTION__;
+    
+    double llx = std::min(bbox[0], bbox[2]);
+    double lly = std::min(bbox[1], bbox[3]);
+    double urx = std::max(bbox[0], bbox[2]);
+    double ury = std::max(bbox[1], bbox[3]);
+
+    if(urx<llx)
+      {
+	LOG_S(ERROR) << "we have a malformed page-boundary for " << name << "-> llx: "<< llx << ", urx: "<< urx;
+      }
+
+    if(ury<lly)
+      {
+	LOG_S(ERROR) << "we have a malformed page-boundary for " << name << "-> lly: "<< lly << ", ury: "<< ury;
+      }    
+    
+    bbox[0] = llx;
+    bbox[1] = lly;
+    bbox[2] = urx;
+    bbox[3] = ury;
+
+    return bbox;
+  }
   
   bool pdf_resource<PAGE_DIMENSION>::init_from(nlohmann::json& data)
   {
@@ -198,7 +229,7 @@ namespace pdflib
   void pdf_resource<PAGE_DIMENSION>::execute(nlohmann::json& json_resources,
 					     QPDFObjectHandle qpdf_resources)
   {
-    LOG_S(INFO) << __FUNCTION__;
+    LOG_S(INFO) << __FUNCTION__ << ": " << json_resources.dump(2);
 
     if(json_resources.count("/Rotate"))
       {
@@ -306,15 +337,62 @@ namespace pdflib
       }
     
     if((not initialised) and json_resources.count("/CropBox"))
-      {        
+      {
+	std::stringstream ss;
+	ss << "defaulting to crop-box";	
+        LOG_S(INFO) << ss.str();
+	
         bbox = crop_bbox;
         initialised = true;
       }    
-    else if(not initialised)
+    //else if(not initialised)
+    else if((not initialised) and json_resources.count("/MediaBox"))
       {
+	std::stringstream ss;
+	ss << "defaulting to media-box";	
+        LOG_S(INFO) << ss.str();
+
+	crop_bbox = media_bbox;
+	
         bbox = media_bbox;
         initialised = true;
       }
+    else if((not initialised) and json_resources.count("/ArtBox"))
+      {
+	std::stringstream ss;
+	ss << "defaulting to art-box";	
+        LOG_S(INFO) << ss.str();
+
+	crop_bbox = art_bbox;
+	media_bbox = art_bbox;
+	
+        bbox = art_bbox;
+        initialised = true;
+      }    
+    else if((not initialised) and json_resources.count("/BleedBox"))
+      {
+	std::stringstream ss;
+	ss << "defaulting to bleed-box";	
+        LOG_S(INFO) << ss.str();
+	
+	crop_bbox = bleed_bbox;
+	media_bbox = bleed_bbox;
+	
+        bbox = bleed_bbox;
+        initialised = true;
+      }
+    else if((not initialised) and json_resources.count("/TrimBox"))
+      {
+	std::stringstream ss;
+	ss << "defaulting to trim-box";	
+        LOG_S(INFO) << ss.str();
+
+	crop_bbox = trim_bbox;
+	media_bbox = trim_bbox;
+	
+        bbox = trim_bbox;
+        initialised = true;
+      }    
     else
       {
 	std::stringstream ss;
@@ -324,6 +402,12 @@ namespace pdflib
         LOG_S(ERROR) << ss.str();
 	throw std::logic_error(ss.str());
       }
+
+    crop_bbox = normalize_page_boundaries(crop_bbox, "crop_bbox");
+    media_bbox = normalize_page_boundaries(media_bbox, "media_bbox");
+    art_bbox = normalize_page_boundaries(art_bbox, "art_bbox");
+    bleed_bbox = normalize_page_boundaries(bleed_bbox, "bleed_bbox");
+    trim_bbox = normalize_page_boundaries(trim_bbox, "trim_bbox");
   }
 
 }

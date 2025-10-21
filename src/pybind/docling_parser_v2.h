@@ -35,6 +35,8 @@ namespace docling
     bool load_document_from_bytesio(std::string key, pybind11::object bytes_io);
 
     bool unload_document(std::string key);
+    bool unload_document_pages(std::string key);
+    bool unload_document_page(std::string key, int page_num);
 
     void unload_documents();
 
@@ -52,7 +54,12 @@ namespace docling
     nlohmann::json parse_pdf_from_key_on_page(std::string key,
 					      int page,
 					      std::string page_boundary,
-					      bool do_sanitization);
+					      bool do_sanitization,
+					      bool keep_char_cells,
+					      bool keep_lines,
+					      bool keep_bitmaps,
+					      bool create_word_cells,
+					      bool create_line_cells);
 
     nlohmann::json sanitize_cells(nlohmann::json& original_cells,
 				  nlohmann::json& page_dim,
@@ -254,6 +261,40 @@ namespace docling
     return false;    
   }
 
+  bool docling_parser_v2::unload_document_page(std::string key, int page_num)
+  {
+    auto itr = key2doc.find(key);
+
+    if(itr!=key2doc.end())
+      {
+	decoder_ptr_type decoder_ptr = itr->second;
+	decoder_ptr->unload_page(page_num);
+      }
+    else
+      {
+	LOG_S(ERROR) << "key not found: " << key;	
+      }
+    
+    return false;    
+  }
+
+  bool docling_parser_v2::unload_document_pages(std::string key)
+  {
+    auto itr = key2doc.find(key);
+
+    if(itr!=key2doc.end())
+      {
+	decoder_ptr_type decoder_ptr = itr->second;
+	decoder_ptr->unload_pages();
+      }
+    else
+      {
+	LOG_S(ERROR) << "key not found: " << key;	
+      }
+    
+    return false;    
+  }
+  
   void docling_parser_v2::unload_documents()
   {
     key2doc.clear();
@@ -349,7 +390,12 @@ namespace docling
   nlohmann::json docling_parser_v2::parse_pdf_from_key_on_page(std::string key,
 							       int page,
 							       std::string page_boundary,
-							       bool do_sanitization)
+							       bool do_sanitization,
+							       bool keep_char_cells,
+							       bool keep_lines,
+							       bool keep_bitmaps,
+							       bool create_word_cells,
+							       bool create_line_cells)
   {
     LOG_S(INFO) << __FUNCTION__;
     
@@ -363,7 +409,14 @@ namespace docling
     auto& decoder = itr->second;
     
     std::vector<int> pages = {page};
-    decoder->decode_document(pages, page_boundary, do_sanitization);
+    decoder->decode_document(pages,
+			     page_boundary,
+			     do_sanitization,
+			     keep_char_cells,
+			     keep_lines,
+			     keep_bitmaps,
+			     create_word_cells,
+			     create_line_cells);
 
     LOG_S(INFO) << "decoding done for for key: " << key << " and page: " << page;
 
